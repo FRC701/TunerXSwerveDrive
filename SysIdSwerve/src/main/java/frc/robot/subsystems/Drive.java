@@ -14,7 +14,7 @@ import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.MutableMeasure;
 import edu.wpi.first.units.Velocity;
 import edu.wpi.first.units.Voltage;
-import edu.wpi.first.wpilibj.Encoder;
+//import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.Constants.DriveConstants;
@@ -24,8 +24,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 
 public class Drive extends SubsystemBase {
   // The motors on the left side of the drive.
@@ -38,12 +41,12 @@ public class Drive extends SubsystemBase {
 
   private final TalonFX m_backleftMotor = new TalonFX(DriveConstants.kLeftMotor2Port);
 
-  
+
   // The robot's drive
   private final DifferentialDrive m_drive =
       new DifferentialDrive(m_leftMotor::set, m_rightMotor::set);
-
-  // The left-side drive encoder
+/* 
+   // The left-side drive encoder
   private final Encoder m_leftEncoder =
       new Encoder(
           DriveConstants.kLeftEncoderPorts[0],
@@ -56,7 +59,7 @@ public class Drive extends SubsystemBase {
           DriveConstants.kRightEncoderPorts[0],
           DriveConstants.kRightEncoderPorts[1],
           DriveConstants.kRightEncoderReversed);
-
+*/
   // Mutable holder for unit-safe voltage values, persisted to avoid reallocation.
   private final MutableMeasure<Voltage> m_appliedVoltage = mutable(Volts.of(0));
   // Mutable holder for unit-safe linear distance values, persisted to avoid reallocation.
@@ -84,18 +87,18 @@ public class Drive extends SubsystemBase {
                     .voltage(
                         m_appliedVoltage.mut_replace(
                             m_leftMotor.get() * RobotController.getBatteryVoltage(), Volts))
-                    .linearPosition(m_distance.mut_replace(m_leftEncoder.getDistance(), Meters))
+                    .linearPosition(m_distance.mut_replace(m_leftMotor.getRotorPosition().getValueAsDouble() * DriveConstants.kEncoderDistancePerPulse, Meters))
                     .linearVelocity(
-                        m_velocity.mut_replace(m_leftEncoder.getRate(), MetersPerSecond));
+                        m_velocity.mut_replace(m_leftMotor.getRotorVelocity().getValueAsDouble() * DriveConstants.kEncoderDistancePerPulse, MetersPerSecond));
                 // Record a frame for the right motors.  Since these share an encoder, we consider
                 // the entire group to be one motor.
                 log.motor("drive-right")
                     .voltage(
                         m_appliedVoltage.mut_replace(
                             m_rightMotor.get() * RobotController.getBatteryVoltage(), Volts))
-                    .linearPosition(m_distance.mut_replace(m_rightEncoder.getDistance(), Meters))
+                    .linearPosition(m_distance.mut_replace(m_rightMotor.getRotorPosition().getValueAsDouble() * DriveConstants.kEncoderDistancePerPulse, Meters))
                     .linearVelocity(
-                        m_velocity.mut_replace(m_rightEncoder.getRate(), MetersPerSecond));
+                        m_velocity.mut_replace(m_rightMotor.getRotorVelocity().getValueAsDouble() * DriveConstants.kEncoderDistancePerPulse, MetersPerSecond));
               },
               // Tell SysId to make generated commands require this subsystem, suffix test state in
               // WPILog with this subsystem's name ("drive")
@@ -110,11 +113,18 @@ public class Drive extends SubsystemBase {
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
-    m_rightMotor.setInverted(true);
+
+    var talonFXConfigurator = m_rightMotor.getConfigurator();
+    var motorConfigs = new MotorOutputConfigs();
+
+// set invert to CW+ and apply config change
+    motorConfigs.Inverted = InvertedValue.Clockwise_Positive;
+    talonFXConfigurator.apply(motorConfigs);
+    
 
     // Sets the distance per pulse for the encoders
-    m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
-    m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
+   /*  m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
+    m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);*/
   }
 
   /**

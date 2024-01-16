@@ -26,11 +26,11 @@ public final class Constants {
     public static final boolean kLeftEncoderReversed = false;
     public static final boolean kRightEncoderReversed = true;
 
-    public static final int kEncoderCPR = 1024;
-    public static final double kWheelDiameterMeters = Units.inchesToMeters(6);
+    public static final int kEncoderCPR = 2048;
+    public static final double kWheelDiameterMeters = Units.inchesToMeters(4);
     public static final double kEncoderDistancePerPulse =
         // Assumes the encoders are directly mounted on the wheel shafts
-        (kWheelDiameterMeters * Math.PI) / (double) kEncoderCPR;
+        (kWheelDiameterMeters * Math.PI) / (double) kEncoderCPR / 6.75;
   }
 
   public static final class ShooterConstants {
